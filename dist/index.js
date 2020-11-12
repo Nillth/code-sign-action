@@ -119,7 +119,9 @@ const child_process_1 = __webpack_require__(129);
 const process_1 = __webpack_require__(765);
 const asyncExec = util_1.default.promisify(child_process_1.exec);
 const certificateFileName = process_1.env['TEMP'] + '\\certificate.pfx';
-const timestampUrl = 'http://timestamp.verisign.com/scripts/timstamp.dll';
+const thumbprint: string = core.getInput('certificateThumbprint');
+const timestampUrl = 'http://timestamp.digicert.com';
+
 const signtool = 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe';
 const signtoolFileExtensions = [
     '.dll', '.exe', '.sys', '.vxd',
@@ -143,49 +145,20 @@ async function createCertificatePfx() {
     await fs_1.promises.writeFile(certificateFileName, certificate);
     return true;
 }
-async function addCertificateToStore() {
-    try {
-        const password = core.getInput('password');
-        if (password == '') {
-            console.log("Password is required to add pfx certificate to store");
-            return false;
+
+async function removeCertificatePfx() {
+    console.log(`Removing to ${certificateFileName}.`);
+    await fs.removeFile(certificateFileName);
+    return true;
         }
-        var command = `certutil -f -p ${password} -importpfx ${certificateFileName}`;
-        console.log("Adding cert to store command: " + command);
-        const { stdout } = await asyncExec(command);
-        console.log(stdout);
-        return true;
-    }
-    catch (err) {
-        console.log(err.stdout);
-        console.log(err.stderr);
-        return false;
-    }
-}
+
 async function signWithSigntool(fileName) {
     try {
-        var vitalParameterIncluded = false;
-        var command = `"${signtool}" sign /sm /t ${timestampUrl}`;
-        const sha1 = core.getInput('certificatesha1');
-        if (sha1 != '') {
-            command = command + ` /sha1 "${sha1}"`;
-            vitalParameterIncluded = true;
-        }
-        const name = core.getInput('certificatename');
-        if (name != '') {
-            vitalParameterIncluded = true;
-            command = command + ` /n "${name}"`;
-        }
-        if (!vitalParameterIncluded) {
-            console.log("You need to include a NAME or a SHA1 Hash for the certificate to sign with.");
-        }
-        command = command + ` ${fileName}`;
-        console.log("Signing command: " + command);
-        const { stdout } = await asyncExec(command);
+        const password: string = core.getInput('password');
+        const { stdout } = await asyncExec(`"${signtool}" sign /f ${certificateFileName} /p "${password}" /tr "${timestampUrl}" /td sha256 /fd sha256 "${fileName}"`);
         console.log(stdout);
         return true;
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err.stdout);
         console.log(err.stderr);
         return false;
@@ -241,8 +214,7 @@ async function signFiles() {
 async function run() {
     try {
         if (await createCertificatePfx()) {
-            if (await addCertificateToStore())
-                await signFiles();
+            await signFiles();
         }
     }
     catch (err) {
