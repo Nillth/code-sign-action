@@ -7,6 +7,7 @@ import { env } from 'process';
 
 const asyncExec = util.promisify(exec);
 const certificateFileName = env['TEMP'] + '\\certificate.pfx';
+const thumbprint: string = core.getInput('certificateThumbprint');
 
 const timestampUrl = 'http://timestamp.digicert.com';
 const signtool = 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe';
@@ -36,6 +37,19 @@ async function createCertificatePfx() {
     return true;
 }
 
+async function removeCertificatePfx() {
+    console.log(`Removing to ${certificateFileName}.`);
+    await fs.removeFile(certificateFileName);
+    
+    var command = `certutil -delstore MY ${thumbprint}` 
+    console.log("Adding cert to store command: " + command);
+    const { stdout } = await asyncExec(command);
+    console.log(stdout);
+    return true;
+
+    
+}
+
 async function addCertificateToStore(){
     try {
         const password : string= core.getInput('password');
@@ -59,7 +73,6 @@ async function signWithSigntool(fileName: string) {
     try {
         var vitalParameterIncluded = false; 
         var command = `"${signtool}" sign /sm /t ${timestampUrl}`
-        const thumbprint: string = core.getInput('certificateThumbprint');
         const sha: string = core.getInput('sha');
         if (sha == '1'){
             command = command + ` /sha1 "${thumbprint}"`
@@ -77,6 +90,7 @@ async function signWithSigntool(fileName: string) {
         if (!vitalParameterIncluded){
             console.log("You need to include a NAME or a SHA1 Hash for the certificate to sign with.")
         }
+        console.log(`"SHA: ${sha}: "`); 
         command = command + ` ${fileName}`; 
         console.log("Signing command: " + command); 
         const { stdout } = await asyncExec(command);
