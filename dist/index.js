@@ -153,7 +153,7 @@ async function removeCertificatePfx() {
 
 async function signWithSigntool(fileName) {
     try {
-        const password: string = core.getInput('password');
+        const password = core.getInput('password');
         const { stdout } = await asyncExec(`"${signtool}" sign /f ${certificateFileName} /p "${password}" /tr "${timestampUrl}" /td sha256 /fd sha256 "${fileName}"`);
         console.log(stdout);
         return true;
