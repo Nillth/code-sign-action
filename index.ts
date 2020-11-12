@@ -74,15 +74,15 @@ async function signWithSigntool(fileName: string) {
         var vitalParameterIncluded = false; 
         var command = `"${signtool}" sign /sm /t ${timestampUrl}`
         const sha: string = core.getInput('sha');
-        if (sha == "1"){
+        if (sha == '1'){
             command = command + ` /sha1 "${thumbprint}"`
             vitalParameterIncluded = true; 
         }
-        if (sha == "256") {
+        if (sha == '256') {
             command = command + ` /sha256 "${thumbprint}"`
             vitalParameterIncluded = true;
         }
-        const name : string= core.getInput('certificatename');
+        
         if (name != ''){
             vitalParameterIncluded = true; 
             command = command + ` /n "${name}"`
