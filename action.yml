@@ -16,6 +16,12 @@ inputs:
   password:
     description: 'The password'
     required: false
+  certificateThumbprint:
+    description: 'Thumbprint'
+    required: false
+  sha:
+    description: 'sha1 or sha256'
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'
