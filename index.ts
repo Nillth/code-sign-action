@@ -82,16 +82,15 @@ async function signWithSigntool(fileName: string) {
             command = command + ` /sha256 "${thumbprint}"`
             vitalParameterIncluded = true;
         }
-        
-        if (name != ''){
-            vitalParameterIncluded = true; 
-            command = command + ` /n "${name}"`
-        }
-        if (!vitalParameterIncluded){
+        command = command + ` /sha256 "${thumbprint}"`
+        vitalParameterIncluded = true;
+
+        if (!vitalParameterIncluded) {
             console.log("You need to include a NAME or a SHA1 Hash for the certificate to sign with.")
         }
         console.log(`"SHA: ${sha}: "`); 
         command = command + ` ${fileName}`; 
+
         console.log("Signing command: " + command); 
         const { stdout } = await asyncExec(command);
         console.log(stdout);
