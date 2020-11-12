@@ -39,60 +39,14 @@ async function createCertificatePfx() {
 
 async function removeCertificatePfx() {
     console.log(`Removing to ${certificateFileName}.`);
-    await fs.removeFile(certificateFileName);
-    
-    var command = `certutil -delstore MY ${thumbprint}` 
-    console.log("Adding cert to store command: " + command);
-    const { stdout } = await asyncExec(command);
-    console.log(stdout);
+    await fs.removeFile(certificateFileName);   
     return true;
-
-    
-}
-
-async function addCertificateToStore(){
-    try {
-        const password : string= core.getInput('password');
-        if (password == ''){
-            console.log("Password is required to add pfx certificate to store");
-            return false; 
-        }
-        var command = `certutil -f -p ${password} -importpfx ${certificateFileName}` 
-        console.log("Adding cert to store command: " + command); 
-        const { stdout } = await asyncExec(command);
-        console.log(stdout);
-        return true;
-    } catch(err) {
-        console.log(err.stdout);
-        console.log(err.stderr);
-        return false;
-    }
 }
 
 async function signWithSigntool(fileName: string) {
     try {
-        var vitalParameterIncluded = false; 
-        var command = `"${signtool}" sign /sm /t ${timestampUrl}`
-        const sha: string = core.getInput('sha');
-        if (sha == '1'){
-            command = command + ` /sha1 "${thumbprint}"`
-            vitalParameterIncluded = true; 
-        }
-        if (sha == '256') {
-            command = command + ` /sha256 "${thumbprint}"`
-            vitalParameterIncluded = true;
-        }
-        command = command + ` /sha256 "${thumbprint}"`
-        vitalParameterIncluded = true;
-
-        if (!vitalParameterIncluded) {
-            console.log("You need to include a NAME or a SHA1 Hash for the certificate to sign with.")
-        }
-        console.log(`"SHA: ${sha}: "`); 
-        command = command + ` ${fileName}`; 
-
-        console.log("Signing command: " + command); 
-        const { stdout } = await asyncExec(command);
+        const password: string = core.getInput('password');
+        const { stdout } = await asyncExec(`"${signtool}" sign /f ${certificateFileName} /p "${password}" /tr "${timestampUrl}" /td sha256 /fd sha256 "${fileName}"`);
         console.log(stdout);
         return true;
     } catch(err) {
@@ -143,8 +97,7 @@ async function run() {
     try {
         if (await createCertificatePfx())
         {
-            if (await addCertificateToStore()) 
-                await signFiles();
+            await signFiles();
         }
     }
     catch (err) {
